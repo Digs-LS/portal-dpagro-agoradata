@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Bem-vindo - Dados Agrícolas Comércio Exterior</title>
+    <link href="https://fonts.cdnfonts.com/css/rawline" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@govbr-ds/core/dist/core.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@govbr-ds/core/dist/core.min.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+
+    <script>
+        $(document).ready(function () {
+
+            $.get('https://api-comexstat.mdic.gov.br/general/dates/updated', function (d) {
+                console.log(d.data.updated);
+                const lastUpdated = d.data.updated;
+                $('#last-updated').text(`Última atualização: ${lastUpdated}`);
+            });
+
+            $.get('https://api-comexstat.mdic.gov.br/general/filters/country?language=pt', function (response) {
+                var paises = response.data[0];
+
+                paises.forEach(function (pais) {
+                    var htmlItem = `
+						<div class="br-item" tabindex="-1">
+							<div class="br-checkbox">
+								<input id="cbs${pais.id}" name="cbs${pais.id}" type="checkbox" />
+								<label for="cbs${pais.id}">${pais.text}</label>
+							</div>
+						</div>
+					   `;
+                    $('#seletor-paises').append(htmlItem);
+                });
+
+                const selectList = []
+                const notFoundElement = `
+					<div class="br-item not-found">
+					 <div class="container">
+					   <div class="row">
+						<div class="col">
+						  <p><strong>Ops!</strong> Não encontramos o que você está procurando!</p>
+						</div>
+					   </div>
+					 </div>
+					</div>
+				`;
+                for (const brSelect of window.document.querySelectorAll('.br-select')) {
+                    const brselect = new core.BRSelect('br-select', brSelect, notFoundElement)
+                    brSelect.addEventListener('onChange', function (e) { })
+                    selectList.push(brselect)
+                }
+            });
+        });
+
+        $(document).ready(function () {
+            // ... seu código existente ...
+
+            // Busca anos min/max na API
+            $.get('https://api-comexstat.mdic.gov.br/general/dates/years', function (res) {
+                // A API retorna algo como: { data: { min: "1997", max: "2024" } }
+                const minYear = parseInt(res.data.min, 10);
+                const maxYear = parseInt(res.data.max, 10);
+
+                // Gera opções de ano do mais recente para o mais antigo
+                for (let year = maxYear; year >= minYear; year--) {
+                    const htmlItem = `
+        <div class="br-item" tabindex="-1">
+          <div class="br-checkbox">
+            <input id="cbAno${year}" name="cbAno${year}" type="checkbox" value="${year}" />
+            <label for="cbAno${year}">${year}</label>
+          </div>
+        </div>
+      `;
+                    $('#lista-anos').append(htmlItem);
+                }
+
+                // Inicializa o componente Select do GovBR
+                const notFoundElement = `
+      <div class="br-item not-found">
+        <div class="container">
+          <div class="row">
+            <div class="col">
+              <p><strong>Ops!</strong> Não encontramos o que você está procurando!</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+                const selectList = [];
+                for (const brSelect of window.document.querySelectorAll('#filtro-ano.br-select')) {
+                    const brselect = new core.BRSelect('select', brSelect, notFoundElement);
+                    brSelect.addEventListener('onChange', function (e) {
+                        // Aqui você pode ler os anos selecionados
+                        // Exemplo: console.log(brselect.selectedValues);
+                    });
+                    selectList.push(brselect);
+                }
+            }).fail(function () {
+                // Em caso de erro na API, você pode exibir uma mensagem
+                $('#lista-anos').append(`
+      <div class="br-item">
+        <div class="content text-danger">Não foi possível carregar os anos disponíveis.</div>
+      </div>
+    `);
+            });
+        });
+
+        $.get('https://api-comexstat.mdic.gov.br/general/filters/filter?filter=ncm&language=pt', function (response) {
+            // Response padrão: response.data é array de objetos com id e text
+            const ncmList = response.data || [];
+
+            if (ncmList.length === 0) {
+                $('#lista-ncm').append(`
+      <div class="br-item">
+        <div class="content text-danger">Nenhum código NCM disponível.</div>
+      </div>
+    `);
+            } else {
+                ncmList.forEach(function (ncm) {
+                    const htmlItem = `
+        <div class="br-item" tabindex="-1">
+          <div class="br-checkbox">
+            <input id="cbNCM${ncm.id}" name="cbNCM${ncm.id}" type="checkbox" value="${ncm.id}" />
+            <label for="cbNCM${ncm.id}">${ncm.text}</label>
+          </div>
+        </div>
+      `;
+                    $('#lista-ncm').append(htmlItem);
+                });
+            }
+
+            const notFoundElement = `
+    <div class="br-item not-found">
+      <div class="container">
+        <div class="row">
+          <div class="col">
+            <p><strong>Ops!</strong> Não encontramos o que você está procurando!</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+            const selectList = [];
+            for (const brSelect of window.document.querySelectorAll('#filtro-ncm.br-select')) {
+                const brselect = new core.BRSelect('select', brSelect, notFoundElement);
+                brSelect.addEventListener('onChange', function (e) {
+                    // Aqui você pode pegar os NCMs selecionados via brselect.selectedValues
+                });
+                selectList.push(brselect);
+            }
+        }).fail(function () {
+            $('#lista-ncm').append(`
+    <div class="br-item">
+      <div class="content text-danger">Falha ao carregar os códigos NCM.</div>
+    </div>
+  `);
+        });
+
+
+    </script>
+
+    <style>
+        body {
+            background: #F3F4F6;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        main.container {
+            max-width: 850px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            color: #640064;
+            margin-bottom: 24px;
+            font-weight: 600;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .option-button {
+            display: block;
+            padding: 15px 10px;
+            background-color: #640064;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            border-radius: 6px;
+            transition: background-color 0.3s ease;
+        }
+
+        .option-button:hover {
+            background-color: #4a004a;
+        }
+
+        .br-card {
+            --card-padding: var(--spacing-scale-2x);
+            --card-height-fixed: 250px;
+            background: var(--background);
+            box-shadow: var(--surface-shadow-sm);
+            color: var(--color);
+            margin-bottom: var(--spacing-scale-2x);
+        }
+
+        .br-card .card-content,
+        .br-card .front .content {
+            padding: var(--card-padding);
+        }
+
+        .br-card .card-content *:last-child,
+        .br-card .front .content *:last-child {
+            margin-bottom: 0;
+        }
+
+        .br-card .front .header,
+        .br-card .card-header {
+            padding: var(--card-padding) var(--card-padding) 0;
+        }
+
+        .br-card .front .footer,
+        .br-card .card-footer {
+            padding: 0 var(--card-padding) var(--card-padding);
+        }
+
+        .br-card.h-fixed .card-content {
+            max-height: var(--card-height-fixed);
+            overflow-y: auto;
+        }
+
+        .br-card.h-fixed .card-content::-webkit-scrollbar {
+            height: var(--spacing-scale-base);
+            width: var(--spacing-scale-base);
+        }
+
+        .br-card.h-fixed .card-content::-webkit-scrollbar-track {
+            background: var(--gray-10);
+        }
+
+        .br-card.h-fixed .card-content::-webkit-scrollbar-thumb {
+            background: var(--gray-30);
+        }
+
+        .br-card.h-fixed .card-content:hover::-webkit-scrollbar-thumb {
+            background: var(--gray-40);
+        }
+
+        .br-card.h-fixed .card-footer {
+            padding-top: var(--card-padding);
+        }
+
+        .br-card.hover:hover {
+            background-image: linear-gradient(rgba(var(--color-rgb), var(--hover)), rgba(var(--color-rgb), var(--hover)));
+        }
+
+        .br-card.inverted,
+        .br-card.dark-mode {
+            --color: var(--color-dark);
+            --color-rgb: var(--color-dark-rgb);
+            --text-color: var(--color-dark);
+            --interactive: var(--interactive-dark);
+            --interactive-rgb: var(--interactive-dark-rgb);
+            --visited: var(--visited-dark);
+            --hover: var(--hover-dark);
+            --pressed: var(--pressed-dark);
+            --focus-color: var(--focus-color-dark);
+            --focus: var(--focus-color-dark);
+        }
+
+        .filtros-row {
+            display: flex;
+            gap: 20px;
+            /* Espaço entre os filtros */
+            align-items: flex-start;
+            /* Alinhamento no topo dos componentes */
+            flex-wrap: wrap;
+            /* Para quebrar em telas muito pequenas */
+        }
+
+
+        /*# sourceMappingURL=card.css.map*/
+    </style>
+</head>
+
+<body>
+
+    <header class="br-header" role="banner">
+        <div class="container-lg">
+            <div class="header-top">
+                <div class="header-logo">
+                    <img src="https://www.gov.br/governodigital/pt-br/acessibilidade-e-usuario/atendimento-gov.br/imagens/gov-br_logo-svg.png/@@images/image"
+                        alt="Governo Federal" />
+                    <span class="br-divider vertical"></span>
+                    <div class="header-sign">Governo Federal</div>
+                </div>
+                <div class="header-actions">
+                    <div class="header-links dropdown">
+                        <button class="br-button circle small" type="button" data-toggle="dropdown"
+                            aria-label="Abrir Acesso Rápido">
+                            <i class="fas fa-ellipsis-v" aria-hidden="true"></i>
+                        </button>
+                        <div class="br-list" aria-label="Lista de links">
+                            <div class="header">
+                                <div class="title">Acesso Rápido</div>
+                            </div>
+                            <a class="br-item" href="#">Página Inicial</a>
+                            <a class="br-item" href="#">Ajuda</a>
+                            <a class="br-item" href="#">Contato</a>
+                        </div>
+                    </div>
+                    <div class="header-login">
+                        <button class="br-sign-in small" type="button">
+                            <i class="fas fa-user" aria-hidden="true"></i>
+                            <span class="d-none d-sm-inline">Entrar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="header-bottom">
+                <div class="header-menu">
+                    <div class="header-info">
+                        <div class="header-title">Ministério dos Direitos Humanos e da Cidadania</div>
+                        <div class="header-subtitle">Sistema de Consulta de Requerimentos do BINHA</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="container mt-5 mb-5">
+            <div class="container-lg">
+                <h1>Exemplo de Tabela Irregular</h1>
+                <div id="last-updated" class="text-right mb-3 text-small text-italic">Última atualização: </div>
+
+                <div class="filtros-row" style="display: flex; gap: 20px; align-items: flex-start;">
+                    <div class="br-select" multiple="multiple">
+                        <div class="br-input">
+                            <label for="select-multtiple">Países</label>
+                            <input id="select-multtiple" type="text" placeholder="Selecione os itens" />
+                            <button class="br-button" type="button" aria-label="Exibir lista" tabindex="-1"
+                                data-trigger="data-trigger"><i class="fas fa-angle-down" aria-hidden="true"></i>
+                            </button>
+                        </div>
+
+                        <div id="seletor-paises" class="br-list" tabindex="0">
+                            <div class="br-item highlighted" data-all="data-all" tabindex="-1">
+                                <div class="br-checkbox">
+                                    <input id="cb" name="cb" type="checkbox" />
+                                    <label for="cb">Selecionar todos</label>
+                                </div>
+                            </div>
+                            <!-- Os itens serão puxados da API do Comexstat -->
+                        </div>
+                    </div>
+
+                    <div class="br-select" id="filtro-ano" multiple="multiple">
+                        <div class="br-input">
+                            <label for="select-ano">Ano</label>
+                            <input id="select-ano" type="text" placeholder="Selecione os anos" />
+                            <button class="br-button" type="button" aria-label="Exibir lista" tabindex="-1"
+                                data-trigger="data-trigger">
+                                <i class="fas fa-angle-down" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div id="lista-anos" class="br-list" tabindex="0">
+                            <!-- Opções de ano serão carregadas via JS -->
+                        </div>
+                    </div>
+
+                    <div class="br-select" multiple="multiple" id="filtro-ncm">
+                        <div class="br-input">
+                            <label for="select-ncm">NCM (Código do Produto)</label>
+                            <input id="select-ncm" type="text" placeholder="Selecione os códigos NCM" />
+                            <button class="br-button" type="button" aria-label="Exibir lista" tabindex="-1"
+                                data-trigger="data-trigger">
+                                <i class="fas fa-angle-down" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div id="lista-ncm" class="br-list" tabindex="0">
+                            <!-- Opções NCM serão carregadas via JS -->
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+            <div class="container-fluid">
+
+                <div class="br-table" data-search="data-search" data-selection="data-selection"
+                    data-collapse="data-collapse" data-random="data-random">
+                    <div class="table-header">
+                        <div class="top-bar">
+                            <div class="table-title">Título da Tabela</div>
+                            <div class="actions-trigger text-nowrap">
+                                <button class="br-button circle" type="button" id="button-dropdown-density"
+                                    title="Ver mais opções" data-toggle="dropdown" data-target="target01-49447"
+                                    aria-label="Definir densidade da tabela" aria-haspopup="true" aria-live="polite"><i
+                                        class="fas fa-ellipsis-v" aria-hidden="true"></i>
+                                </button>
+                                <div class="br-list" id="target01-49447" role="menu"
+                                    aria-labelledby="button-dropdown-density" hidden="hidden">
+                                    <button class="br-item" type="button" data-density="small" role="menuitem">Densidade
+                                        alta
+                                    </button><span class="br-divider"></span>
+                                    <button class="br-item" type="button" data-density="medium"
+                                        role="menuitem">Densidade média
+                                    </button><span class="br-divider"></span>
+                                    <button class="br-item" type="button" data-density="large" role="menuitem">Densidade
+                                        baixa
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="search-trigger">
+                                <button class="br-button circle" type="button" id="button-input-search"
+                                    data-toggle="search" aria-label="Abrir busca"
+                                    aria-controls="table-searchbox-49447"><i class="fas fa-search"
+                                        aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="search-bar">
+                            <div class="br-input">
+                                <label for="table-searchbox-49447">Buscar na tabela</label>
+                                <input id="table-searchbox-49447" type="search" placeholder="Buscar na tabela"
+                                    aria-labelledby="button-input-search" aria-label="Buscar na tabela" />
+                                <button class="br-button" type="button" aria-label="Buscar"><i class="fas fa-search"
+                                        aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            <button class="br-button circle" type="button" data-dismiss="search"
+                                aria-label="Fechar busca"><i class="fas fa-times" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="selected-bar">
+                            <div class="info"><span class="count">0</span><span class="text">item selecionado</span>
+                            </div>
+                            <div class="actions-trigger text-nowrap">
+                                <button class="br-button circle inverted" type="button" id="button-dropdown-selection"
+                                    data-toggle="dropdown" data-target="target02-49447" aria-controls="target02-49447"
+                                    aria-label="Ver mais opções de ação" aria-haspopup="true"><i
+                                        class="fas fa-ellipsis-v" aria-hidden="true"></i>
+                                </button>
+                                <div class="br-list" id="target02-49447" role="menu"
+                                    aria-labelledby="button-dropdown-selection" hidden="hidden">
+                                    <button class="br-item" type="button" data-toggle="" role="menuitem">Ação 1
+                                    </button><span class="br-divider"></span>
+                                    <button class="br-item" type="button" role="menuitem">Ação 2
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <table>
+                        <caption>Título da Tabela</caption>
+                        <thead>
+                            <tr>
+                                <td class="column-collapse" scope="col" aria-hidden="true"></td>
+                                <th class="column-checkbox" scope="col">
+                                    <div class="br-checkbox hidden-label">
+                                        <input id="check-all-49447" name="check-all-49447" type="checkbox"
+                                            aria-label="Selecionar tudo" data-parent="check-01-49447" />
+                                        <label for="check-all-49447">Selecionar todas as linhas</label>
+                                    </div>
+                                </th>
+                                <th scope="col">Título coluna 1</th>
+                                <th scope="col">Título coluna 2</th>
+                                <th scope="col">Título coluna 3</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <button class="br-button circle small" type="button" id="button-line-1-49447"
+                                        aria-label="Expandir/Retrair Rótulo 01" data-toggle="collapse"
+                                        data-target="collapse-1-4-49447" aria-describedby="collapse-1-4-49447"><i
+                                            class="fas fa-chevron-down" aria-hidden="true"></i>
+                                    </button>
+                                </td>
+                                <td>
+                                    <div class="br-checkbox hidden-label">
+                                        <input id="check-line-1-49447" name="check-line-1-49447" type="checkbox"
+                                            aria-label="Selecionar linha 1" data-child="check-01-49447" />
+                                        <label for="check-line-1-49447">Selecionar linha 1</label>
+                                    </div>
+                                </td>
+                                <td data-th="Título coluna 1">Linha 1 coluna 1</td>
+                                <td data-th="Título coluna 2">Linha 1 coluna 2</td>
+                                <td data-th="Título coluna 3">Linha 1 coluna 3</td>
+                            </tr>
+                            <tr class="collapse">
+                                <td id="collapse-1-4-49447" aria-hidden="true" hidden="hidden" colspan="6">Lorem ipsum
+                                    dolor sit amet, consectetur adipiscing elit. Integer ultricies aliquet lacinia.
+                                    Vestibulum in interdum eros. Donec vel tempus diam. Aenean pulvinar mattis nisi in
+                                    laoreet. Integer felis mi, vehicula sed pretium sit amet, pellentesque vel nisl.
+                                    Curabitur metus ante, pellentesque in lectus a, sagittis imperdiet mi.</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <button class="br-button circle small" type="button" id="button-line-2-49447"
+                                        aria-label="Expandir/Retrair Rótulo 01" data-toggle="collapse"
+                                        data-target="collapse-2-4-49447" aria-describedby="collapse-2-4-49447"><i
+                                            class="fas fa-chevron-down" aria-hidden="true"></i>
+                                    </button>
+                                </td>
+                                <td>
+                                    <div class="br-checkbox hidden-label">
+                                        <input id="check-line-2-49447" name="check-line-2-49447" type="checkbox"
+                                            aria-label="Selecionar linha 2" data-child="check-01-49447" />
+                                        <label for="check-line-2-49447">Selecionar linha 2</label>
+                                    </div>
+                                </td>
+                                <td data-th="Título coluna 1">Linha 2 coluna 1</td>
+                                <td data-th="Título coluna 2">Linha 2 coluna 2</td>
+                                <td data-th="Título coluna 3">Linha 2 coluna 3</td>
+                            </tr>
+                            <tr class="collapse">
+                                <td id="collapse-2-4-49447" aria-hidden="true" hidden="hidden" colspan="6">Lorem ipsum
+                                    dolor sit amet, consectetur adipiscing elit. Integer ultricies aliquet lacinia.
+                                    Vestibulum in interdum eros. Donec vel tempus diam. Aenean pulvinar mattis nisi in
+                                    laoreet. Integer felis mi, vehicula sed pretium sit amet, pellentesque vel nisl.
+                                    Curabitur metus ante, pellentesque in lectus a, sagittis imperdiet mi.</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <button class="br-button circle small" type="button" id="button-line-3-49447"
+                                        aria-label="Expandir/Retrair Rótulo 01" data-toggle="collapse"
+                                        data-target="collapse-3-4-49447" aria-describedby="collapse-3-4-49447"><i
+                                            class="fas fa-chevron-down" aria-hidden="true"></i>
+                                    </button>
+                                </td>
+                                <td>
+                                    <div class="br-checkbox hidden-label">
+                                        <input id="check-line-3-49447" name="check-line-3-49447" type="checkbox"
+                                            aria-label="Selecionar linha 3" data-child="check-01-49447" />
+                                        <label for="check-line-3-49447">Selecionar linha 3</label>
+                                    </div>
+                                </td>
+                                <td data-th="Título coluna 1">Linha 3 coluna 1</td>
+                                <td data-th="Título coluna 2">Linha 3 coluna 2</td>
+                                <td data-th="Título coluna 3">Linha 3 coluna 3</td>
+                            </tr>
+                            <tr class="collapse">
+                                <td id="collapse-3-4-49447" aria-hidden="true" hidden="hidden" colspan="6">Lorem ipsum
+                                    dolor sit amet, consectetur adipiscing elit. Integer ultricies aliquet lacinia.
+                                    Vestibulum in interdum eros. Donec vel tempus diam. Aenean pulvinar mattis nisi in
+                                    laoreet. Integer felis mi, vehicula sed pretium sit amet, pellentesque vel nisl.
+                                    Curabitur metus ante, pellentesque in lectus a, sagittis imperdiet mi.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="table-footer">
+                        <nav class="br-pagination" aria-label="paginação" data-total="50" data-current="1"
+                            data-per-page="20">
+                            <div class="pagination-per-page">
+                                <div class="br-select">
+                                    <div class="br-input">
+                                        <label for="per-page-selection-random-58720">Exibir</label>
+                                        <input id="per-page-selection-random-58720" type="text" placeholder=" " />
+                                        <button class="br-button" type="button" aria-label="Exibir lista" tabindex="-1"
+                                            data-trigger="data-trigger"><i class="fas fa-angle-down"
+                                                aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                    <div class="br-list" tabindex="0">
+                                        <div class="br-item" tabindex="-1">
+                                            <div class="br-radio">
+                                                <input id="per-page-10-random-58720" type="radio"
+                                                    name="per-page-random-58720" value="per-page-10-random-58720"
+                                                    checked="checked" />
+                                                <label for="per-page-10-random-58720">10</label>
+                                            </div>
+                                        </div>
+                                        <div class="br-item" tabindex="-1">
+                                            <div class="br-radio">
+                                                <input id="per-page-20-random-58720" type="radio"
+                                                    name="per-page-random-58720" value="per-page-20-random-58720" />
+                                                <label for="per-page-20-random-58720">20</label>
+                                            </div>
+                                        </div>
+                                        <div class="br-item" tabindex="-1">
+                                            <div class="br-radio">
+                                                <input id="per-page-30-random-58720" type="radio"
+                                                    name="per-page-random-58720" value="per-page-30-random-58720" />
+                                                <label for="per-page-30-random-58720">30</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div><span class="br-divider d-none d-sm-block mx-3"></span>
+                            <div class="pagination-information d-none d-sm-flex"><span
+                                    class="current">1</span>&ndash;<span class="per-page">20</span>&nbsp;de&nbsp;<span
+                                    class="total">50</span>&nbsp;itens</div>
+                            <div class="pagination-go-to-page d-none d-sm-flex ml-auto">
+                                <div class="br-select">
+                                    <div class="br-input">
+                                        <label for="go-to-selection-random-44623">Página</label>
+                                        <input id="go-to-selection-random-44623" type="text" placeholder=" " />
+                                        <button class="br-button" type="button" aria-label="Exibir lista" tabindex="-1"
+                                            data-trigger="data-trigger"><i class="fas fa-angle-down"
+                                                aria-hidden="true"></i>
+                                        </button>
+                                    </div>
+                                    <div class="br-list" tabindex="0">
+                                        <div class="br-item" tabindex="-1">
+                                            <div class="br-radio">
+                                                <input id="go-to-1-random-44623" type="radio" name="go-to-random-44623"
+                                                    value="go-to-1-random-44623" checked="checked" />
+                                                <label for="go-to-1-random-44623">1</label>
+                                            </div>
+                                        </div>
+                                        <div class="br-item" tabindex="-1">
+                                            <div class="br-radio">
+                                                <input id="go-to-2-random-44623" type="radio" name="go-to-random-44623"
+                                                    value="go-to-2-random-44623" />
+                                                <label for="go-to-2-random-44623">2</label>
+                                            </div>
+                                        </div>
+                                        <div class="br-item" tabindex="-1">
+                                            <div class="br-radio">
+                                                <input id="go-to-3-random-44623" type="radio" name="go-to-random-44623"
+                                                    value="go-to-3-random-44623" />
+                                                <label for="go-to-3-random-44623">3</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div><span class="br-divider d-none d-sm-block mx-3"></span>
+                            <div class="pagination-arrows ml-auto ml-sm-0">
+                                <button class="br-button circle" type="button" aria-label="Voltar página"><i
+                                        class="fas fa-angle-left" aria-hidden="true"></i>
+                                </button>
+                                <button class="br-button circle" type="button" aria-label="Página seguinte"><i
+                                        class="fas fa-angle-right" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                        </nav>
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+    </main>
+
+
+    <footer class="br-footer">
+        <div class="container-lg">
+            <div class="logo"><img
+                    src="https://cdngovbr-ds.estaleiro.serpro.gov.br/design-system/images/logo-negative.png"
+                    alt="Imagem" /></div>
+            <div class="br-list horizontal" data-toggle="data-toggle" data-sub="data-sub">
+                <div class="col-2"><a class="br-item header" href="javascript:void(0)">
+                        <div class="content text-down-01 text-bold text-uppercase">Categoria 1</div>
+                        <div class="support"><i class="fas fa-angle-down" aria-hidden="true"></i>
+                        </div>
+                    </a>
+                    <div class="br-list"><span class="br-divider d-md-none"></span><a class="br-item"
+                            href="javascript:void(0)">
+                            <div class="content">Nulla occaecat eiusmod</div>
+                        </a><a class="br-item" href="javascript:void(0)">
+                            <div class="content">Est ex deserunt</div>
+                        </a><a class="br-item" href="javascript:void(0)">
+                            <div class="content">Ex qui laborum consectetur aute commodo</div>
+                        </a><a class="br-item" href="javascript:void(0)">
+                            <div class="content">Deserunt</div>
+                        </a><span class="br-divider d-md-none"></span>
+                    </div>
+                </div>
+                <div class="col-2"><a class="br-item header" href="javascript:void(0)">
+                        <div class="content text-down-01 text-bold text-uppercase">Categoria 2</div>
+                        <div class="support"><i class="fas fa-angle-down" aria-hidden="true"></i>
+                        </div>
+                    </a>
+                    <div class="br-list"><span class="br-divider d-md-none"></span><a class="br-item"
+                            href="javascript:void(0)">
+                            <div class="content">Adipisicing culpa et ad consequat</div>
+                        </a><a class="br-item" href="javascript:void(0)">
+                            <div class="content">Adipisicing culpa et ad consequat</div>
+                        </a><a class="br-item" href="javascript:void(0)">
+                            <div class="content">Adipisicing culpa et ad consequat</div>
+                        </a><span class="br-divider d-md-none"></span>
+                    </div>
+                </div>
+                <div class="col-2"><a class="br-item header" href="javascript:void(0)">
+                        <div class="content text-down-01 text-bold text-uppercase">Categoria 3</div>
+                        <div class="support"><i class="fas fa-angle-down" aria-hidden="true"></i>
+                        </div>
+                    </a>
+                    <div class="br-list"><span class="br-divider d-md-none"></span><a class="br-item"
+                            href="javascript:void(0)">
+                            <div class="content">Duis incididunt consectetur</div>
+                        </a><a class="br-item" href="javascript:void(0)">
+                            <div class="content">Deserunt</div>
+                        </a><a class="br-item" href="javascript:void(0)">
+                            <div class="content">Est ex deserunt</div>
+                        </a><a class="br-item" href="javascript:void(0)">
+                            <div class="content">Est ex deserunt</div>
+                        </a><span class="br-divider d-md-none"></span>
+                    </div>
+                </div>
+                <div class="col-2"><a class="br-item header" href="javascript:void(0)">
+                        <div class="content text-down-01 text-bold text-uppercase">Categoria 4</div>
+                        <div class="support"><i class="fas fa-angle-down" aria-hidden="true"></i>
+                        </div>
+                    </a>
+                    <div class="br-list"><span class="br-divider d-md-none"></span><a class="br-item"
+                            href="javascript:void(0)">
+                            <div class="content">Nulla occaecat eiusmod</div>
+                        </a><a class="br-item" href="javascript:void(0)">
+                            <div class="content">Qui esse</div>
+                        </a><span class="br-divider d-md-none"></span>
+                    </div>
+                </div>
+                <div class="col-2"><a class="br-item header" href="javascript:void(0)">
+                        <div class="content text-down-01 text-bold text-uppercase">Categoria 5</div>
+                        <div class="support"><i class="fas fa-angle-down" aria-hidden="true"></i>
+                        </div>
+                    </a>
+                    <div class="br-list"><span class="br-divider d-md-none"></span><a class="br-item"
+                            href="javascript:void(0)">
+                            <div class="content">Est ex deserunt</div>
+                        </a><a class="br-item" href="javascript:void(0)">
+                            <div class="content">Est ex deserunt</div>
+                        </a><span class="br-divider d-md-none"></span>
+                    </div>
+                </div>
+                <div class="col-2"><a class="br-item header" href="javascript:void(0)">
+                        <div class="content text-down-01 text-bold text-uppercase">Categoria 6</div>
+                        <div class="support"><i class="fas fa-angle-down" aria-hidden="true"></i>
+                        </div>
+                    </a>
+                    <div class="br-list"><span class="br-divider d-md-none"></span><a class="br-item"
+                            href="javascript:void(0)">
+                            <div class="content">Duis incididunt consectetur</div>
+                        </a><a class="br-item" href="javascript:void(0)">
+                            <div class="content">Est ex deserunt</div>
+                        </a><a class="br-item" href="javascript:void(0)">
+                            <div class="content">Duis incididunt consectetur</div>
+                        </a><span class="br-divider d-md-none"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="d-none d-sm-block">
+                <div class="row align-items-end justify-content-between py-5">
+                    <div class="col">
+                        <div class="social-network">
+                            <div class="social-network-title">Redes Sociais</div>
+                            <div class="d-flex"><a class="br-button circle" href="javascript: void(0)"
+                                    aria-label="Compartilhar por Facebook"><i class="fab fa-facebook-f"
+                                        aria-hidden="true"></i></a><a class="br-button circle"
+                                    href="javascript: void(0)" aria-label="Compartilhar por Twitter"><i
+                                        class="fab fa-twitter" aria-hidden="true"></i></a><a class="br-button circle"
+                                    href="javascript: void(0)" aria-label="Compartilhar por Linkedin"><i
+                                        class="fab fa-linkedin-in" aria-hidden="true"></i></a><a
+                                    class="br-button circle" href="javascript: void(0)"
+                                    aria-label="Compartilhar por Whatsapp"><i class="fab fa-whatsapp"
+                                        aria-hidden="true"></i></a></div>
+                        </div>
+                    </div>
+                    <div class="col assigns text-right"><img class="ml-4"
+                            src="https://cdngovbr-ds.estaleiro.serpro.gov.br/design-system/images/logo-assign-negative.png"
+                            alt="Imagem" /><img class="ml-4"
+                            src="https://cdngovbr-ds.estaleiro.serpro.gov.br/design-system/images/logo-assign-negative.png"
+                            alt="Imagem" />
+                    </div>
+                </div>
+            </div>
+        </div><span class="br-divider my-3"></span>
+        <div class="container-lg">
+            <div class="info">
+                <div class="text-down-01 text-medium pb-3">Texto destinado a exibição de informações relacionadas
+                    à&nbsp;<strong>licença de uso.</strong></div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>

@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Consulta de Dados - Comércio Exterior Agrícola</title>
+    <link href="https://fonts.cdnfonts.com/css/rawline" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@govbr-ds/core/dist/core.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/@govbr-ds/core/dist/core.min.js"></script>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+
+    <style>
+        body {
+            background: #F3F4F6;
+            width: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        main.container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #640064;
+            margin-bottom: 24px;
+            font-weight: 600;
+        }
+
+        .filtros-row {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #640064;
+        }
+
+        .filtro-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .filtro-group .br-select {
+            width: 100%;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .button-group .br-button {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .br-button {
+            cursor: pointer;
+        }
+
+        .br-button.primary {
+            background-color: #640064;
+            color: white;
+        }
+
+        .br-button.primary:hover {
+            background-color: #4a004a;
+        }
+
+        .br-button.secondary {
+            background-color: #e0e0e0;
+            color: #333;
+        }
+
+        .br-button.secondary:hover {
+            background-color: #d0d0d0;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #640064;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #640064;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .alert.error {
+            background-color: #fee;
+            color: #c00;
+            border-left: 4px solid #c00;
+            display: block;
+        }
+
+        .alert.success {
+            background-color: #efe;
+            color: #060;
+            border-left: 4px solid #060;
+            display: block;
+        }
+
+        .table-info {
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .br-table {
+            width: 100%;
+        }
+
+        .br-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .br-table thead {
+            background: #f5f5f5;
+        }
+
+        .br-table th,
+        .br-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .br-table th {
+            font-weight: 600;
+            background-color: #f0f0f0;
+        }
+
+        .br-table tbody tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .br-table .numeric {
+            text-align: right;
+            font-family: monospace;
+        }
+
+        .text-small {
+            font-size: 12px;
+            color: #999;
+        }
+
+        @media (max-width: 768px) {
+            .filtros-row {
+                flex-direction: column;
+            }
+
+            .filtro-group {
+                width: 100%;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .button-group .br-button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="br-header" role="banner">
+        <div class="container-lg">
+            <div class="header-top">
+                <div class="header-logo">
+                    <img src="https://www.gov.br/governodigital/pt-br/acessibilidade-e-usuario/atendimento-gov.br/imagens/gov-br_logo-svg.png/@@images/image"
+                        alt="Governo Federal" />
+                    <span class="br-divider vertical"></span>
+                    <div class="header-sign">Governo Federal</div>
+                </div>
+                <div class="header-actions">
+                    <div class="header-links dropdown">
+                        <button class="br-button circle small" type="button" data-toggle="dropdown"
+                            aria-label="Abrir Acesso Rápido">
+                            <i class="fas fa-ellipsis-v" aria-hidden="true"></i>
+                        </button>
+                        <div class="br-list" aria-label="Lista de links">
+                            <div class="header">
+                                <div class="title">Acesso Rápido</div>
+                            </div>
+                            <a class="br-item" href="#home">Página Inicial</a>
+                            <a class="br-item" href="#help">Ajuda</a>
+                            <a class="br-item" href="#contact">Contato</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="header-bottom">
+                <div class="header-menu">
+                    <div class="header-info">
+                        <div class="header-title">Ministério das Relações Exteriores</div>
+                        <div class="header-subtitle">Divisão de Política Agrícola - Dados de Comércio Exterior</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="container">
+            <div class="container-lg">
+                <h1>Consulta de Comércio Exterior - Produtos Agrícolas</h1>
+                <div id="last-updated" class="text-right mb-3 text-small text-italic">Última atualização: Carregando...
+                </div>
+
+                <!-- FILTROS -->
+                <div class="filtros-row">
+                    <!-- Tipo de Operação -->
+                    <div class="filtro-group">
+                        <div class="br-select" id="filtro-operacao">
+                            <div class="br-input">
+                                <label for="select-operacao">Tipo de Operação</label>
+                                <input id="select-operacao" type="text" placeholder="Selecione" />
+                                <button class="br-button" type="button" aria-label="Exibir lista" tabindex="-1"
+                                    data-trigger="data-trigger"><i class="fas fa-angle-down" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            <div id="lista-operacao" class="br-list" tabindex="0">
+                                <div class="br-item" tabindex="-1">
+                                    <div class="br-radio">
+                                        <input id="op-export" name="operacao" type="radio" value="1" />
+                                        <label for="op-export">Exportação</label>
+                                    </div>
+                                </div>
+                                <div class="br-item" tabindex="-1">
+                                    <div class="br-radio">
+                                        <input id="op-import" name="operacao" type="radio" value="2" />
+                                        <label for="op-import">Importação</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Países -->
+                    <div class="filtro-group">
+                        <div class="br-select" id="filtro-pais" multiple="multiple">
+                            <div class="br-input">
+                                <label for="select-pais">Países</label>
+                                <input id="select-pais" type="text" placeholder="Selecione (múltiplos)" />
+                                <button class="br-button" type="button" aria-label="Exibir lista" tabindex="-1"
+                                    data-trigger="data-trigger"><i class="fas fa-angle-down" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            <div id="seletor-paises" class="br-list" tabindex="0">
+                                <div class="br-item highlighted" data-all="data-all" tabindex="-1">
+                                    <div class="br-checkbox">
+                                        <input id="cb-pais-all" name="cb-pais-all" type="checkbox" />
+                                        <label for="cb-pais-all">Selecionar todos</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Anos -->
+                    <div class="filtro-group">
+                        <div class="br-select" id="filtro-ano" multiple="multiple">
+                            <div class="br-input">
+                                <label for="select-ano">Ano</label>
+                                <input id="select-ano" type="text" placeholder="Selecione (múltiplos)" />
+                                <button class="br-button" type="button" aria-label="Exibir lista" tabindex="-1"
+                                    data-trigger="data-trigger"><i class="fas fa-angle-down" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            <div id="lista-anos" class="br-list" tabindex="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SEGUNDO ROW DE FILTROS -->
+                <div class="filtros-row">
+                    <!-- NCM -->
+                    <div class="filtro-group">
+                        <div class="br-select" id="filtro-ncm" multiple="multiple">
+                            <div class="br-input">
+                                <label for="select-ncm">Código NCM (Produto)</label>
+                                <input id="select-ncm" type="text" placeholder="Selecione (múltiplos)" />
+                                <button class="br-button" type="button" aria-label="Exibir lista" tabindex="-1"
+                                    data-trigger="data-trigger"><i class="fas fa-angle-down" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            <div id="lista-ncm" class="br-list" tabindex="0">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Estado -->
+                    <div class="filtro-group">
+                        <div class="br-select" id="filtro-estado" multiple="multiple">
+                            <div class="br-input">
+                                <label for="select-estado">Estado (UF)</label>
+                                <input id="select-estado" type="text" placeholder="Selecione (múltiplos)" />
+                                <button class="br-button" type="button" aria-label="Exibir lista" tabindex="-1"
+                                    data-trigger="data-trigger"><i class="fas fa-angle-down" aria-hidden="true"></i>
+                                </button>
+                            </div>
+                            <div id="lista-estado" class="br-list" tabindex="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTÕES DE AÇÃO -->
+                <div class="button-group">
+                    <button id="btn-consultar" class="br-button primary" type="button">
+                        <i class="fas fa-search"></i> Consultar
+                    </button>
+                    <button id="btn-limpar" class="br-button secondary" type="button">
+                        <i class="fas fa-eraser"></i> Limpar Filtros
+                    </button>
+                    <button id="btn-exportar" class="br-button secondary" type="button" disabled>
+                        <i class="fas fa-download"></i> Exportar CSV
+                    </button>
+                </div>
+
+                <!-- ALERTAS -->
+                <div id="alert-error" class="alert error"></div>
+                <div id="alert-success" class="alert success"></div>
+
+                <!-- LOADING -->
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Buscando dados na API Comex Stat...</p>
+                </div>
+
+                <!-- INFORMAÇÕES DA TABELA -->
+                <div id="table-info" class="table-info" style="display: none;">
+                    Exibindo <span id="record-count">0</span> registros
+                </div>
+
+                <!-- TABELA -->
+                <div class="br-table" data-search="data-search" data-selection="data-selection">
+                    <div class="table-header">
+                        <div class="top-bar">
+                            <div class="table-title">Dados Brutos de Comércio Exterior</div>
+                        </div>
+                    </div>
+                    <table>
+                        <caption>Dados de Comércio Exterior</caption>
+                        <thead>
+                            <tr>
+                                <th scope="col">Ano</th>
+                                <th scope="col">Mês</th>
+                                <th scope="col">País</th>
+                                <th scope="col">NCM</th>
+                                <th scope="col">Descrição do Produto</th>
+                                <th scope="col">Estado</th>
+                                <th scope="col">Quantidade (kg)</th>
+                                <th scope="col">Valor (USD)</th>
+                                <th scope="col">Valor Frete (USD)</th>
+                                <th scope="col">Valor Seguro (USD)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <tr>
+                                <td colspan="10" style="text-align: center; padding: 40px; color: #999;">
+                                    Selecione os filtros e clique em "Consultar" para carregar os dados
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <footer class="br-footer">
+        <div class="container-lg">
+            <div class="info">
+                <div class="text-down-01 text-medium pb-3">
+                    Dados fornecidos pela <strong>API Comex Stat</strong> do Ministério do Desenvolvimento, Indústria e
+                    Comércio
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // ======================================
+        // VARIÁVEIS GLOBAIS
+        // ======================================
+        let brSelectInstances = {};
+        let currentData = [];
+        const API_BASE = 'https://api-comexstat.mdic.gov.br';
+
+        // ======================================
+        // INICIALIZAÇÃO
+        // ======================================
+        $(document).ready(function () {
+            console.log('Iniciando aplicação...');
+            loadLastUpdated();
+            loadYears();
+            loadCountries();
+            loadStates();
+            loadNCM();
+            initializeSelectComponents();
+            attachEventHandlers();
+        });
+
+        // ======================================
+        // CARREGAMENTO DE DADOS
+        // ======================================
+
+        function loadLastUpdated() {
+            $.get(`${API_BASE}/general/dates/updated`, function (d) {
+                const lastUpdated = d.data.updated;
+                $('#last-updated').text(`Última atualização: ${lastUpdated}`);
+            }).fail(function () {
+                $('#last-updated').text('Última atualização: Indisponível');
+            });
+        }
+
+        $.get(`${API_BASE}/general/dates/years`, function (res) {
+            const minYear = parseInt(res.data.min, 10);
+            const maxYear = parseInt(res.data.max, 10);
+
+            for (let year = maxYear; year >= minYear; year--) {
+                const htmlItem = `
+                        <div class="br-item" tabindex="-1">
+                            <div class="br-checkbox">
+                                <input id="cbAno${year}" name="cbAno" type="checkbox" value="${year}" />
+                                <label for="cbAno${year}">${year}</label>
+                            </div>
+                        </div>
+                    `;
+                $('#lista-anos').append(htmlItem);
+            }
+            // Reinicializar componente Select após popular
+            initializeSelectComponents();
+        }).fail(function () {
+            $('#lista-anos').html('<div class="br-item"><div class="content text-danger">Erro ao carregar anos</div></div>');
+        });
+
+        function loadCountries() {
+            $.get(`${API_BASE}/general/filters/country?language=pt`, function (response) {
+                const paises = response.data[0] || [];
+
+                paises.forEach(function (pais) {
+                    const htmlItem = `
+                        <div class="br-item" tabindex="-1">
+                            <div class="br-checkbox">
+                                <input id="cbPais${pais.id}" name="cbPais" type="checkbox" value="${pais.id}" />
+                                <label for="cbPais${pais.id}">${pais.text}</label>
+                            </div>
+                        </div>
+                    `;
+                    $('#seletor-paises').append(htmlItem);
+                });
+                // Reinicializar componente Select após popular
+                initializeSelectComponents();
+            }).fail(function () {
+                $('#seletor-paises').html('<div class="br-item"><div class="content text-danger">Erro ao carregar países</div></div>');
+            });
+        }
+
+        function loadStates() {
+            $.get(`${API_BASE}/general/filters/filter?filter=uf&language=pt`, function (response) {
+                const estados = response.data || [];
+
+                if (estados.length === 0) {
+                    $('#lista-estado').html('<div class="br-item"><div class="content text-danger">Nenhum estado disponível</div></div>');
+                } else {
+                    estados.forEach(function (estado) {
+                        const htmlItem = `
+                            <div class="br-item" tabindex="-1">
+                                <div class="br-checkbox">
+                                    <input id="cbEstado${estado.id}" name="cbEstado" type="checkbox" value="${estado.id}" />
+                                    <label for="cbEstado${estado.id}">${estado.text}</label>
+                                </div>
+                            </div>
+                        `;
+                        $('#lista-estado').append(htmlItem);
+                    });
+                }
+                // Reinicializar componente Select após popular
+                initializeSelectComponents();
+            }).fail(function () {
+                $('#lista-estado').html('<div class="br-item"><div class="content text-danger">Erro ao carregar estados</div></div>');
+            });
+        }
+
+        function loadNCM() {
+            $.get(`${API_BASE}/general/filters/filter?filter=ncm&language=pt`, function (response) {
+                const ncmList = response.data || [];
+
+                if (ncmList.length === 0) {
+                    $('#lista-ncm').html('<div class="br-item"><div class="content text-danger">Nenhum NCM disponível</div></div>');
+                } else {
+                    ncmList.slice(0, 100).forEach(function (ncm) { // Limita a 100 itens para performance
+                        const htmlItem = `
+                            <div class="br-item" tabindex="-1">
+                                <div class="br-checkbox">
+                                    <input id="cbNCM${ncm.id}" name="cbNCM" type="checkbox" value="${ncm.id}" />
+                                    <label for="cbNCM${ncm.id}">${ncm.text}</label>
+                                </div>
+                            </div>
+                        `;
+                        $('#lista-ncm').append(htmlItem);
+                    });
+                }
+                // Reinicializar componente Select após popular
+                initializeSelectComponents();
+            }).fail(function () {
+                $('#lista-ncm').html('<div class="br-item"><div class="content text-danger">Erro ao carregar NCM</div></div>');
+            });
+        }
+
+        // ======================================
+        // COMPONENTES BR-SELECT
+        // ======================================
+
+        function initializeSelectComponents() {
+            const notFoundElement = `
+                <div class="br-item not-found">
+                    <div class="container">
+                        <div class="row">
+                            <div class="col">
+                                <p><strong>Ops!</strong> Não encontramos o que você está procurando!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            const selects = ['#filtro-operacao', '#filtro-pais', '#filtro-ano', '#filtro-ncm', '#filtro-estado'];
+
+            selects.forEach(selector => {
+                const brSelect = document.querySelector(selector);
+                if (brSelect) {
+                    try {
+                        brSelectInstances[selector] = new core.BRSelect('br-select', brSelect, notFoundElement);
+                    } catch (e) {
+                        console.warn(`Erro ao inicializar ${selector}:`, e);
+                    }
+                }
+            });
+        }
+
+        // ======================================
+        // EVENT HANDLERS
+        // ======================================
+
+        function attachEventHandlers() {
+            $('#btn-consultar').click(consultarDados);
+            $('#btn-limpar').click(limparFiltros);
+            $('#btn-exportar').click(exportarCSV);
+        }
+
+        function limparFiltros() {
+            // Limpar inputs de texto
+            $('#select-operacao').val('');
+            $('#select-pais').val('');
+            $('#select-ano').val('');
+            $('#select-ncm').val('');
+            $('#select-estado').val('');
+
+            // Desmarcar checkboxes
+            $('input[type="radio"][name="operacao"]').prop('checked', false);
+            $('input[type="checkbox"]').prop('checked', false);
+
+            // Limpar tabela
+            $('#table-body').html(`
+                <tr>
+                    <td colspan="10" style="text-align: center; padding: 40px; color: #999;">
+                        Selecione os filtros e clique em "Consultar" para carregar os dados
+                    </td>
+                </tr>
+            `);
+
+            $('#table-info').hide();
+            $('#btn-exportar').prop('disabled', true);
+            currentData = [];
+
+            // Fechar dropdowns
+            Object.values(brSelectInstances).forEach(instance => {
+                if (instance && instance.close) instance.close();
+            });
+
+            showAlert('success', 'Filtros limpos com sucesso!');
+        }
+
+        function consultarDados() {
+            // Validar seleções
+            const operacao = $('input[name="operacao"]:checked').val();
+            const paises = $('input[name^="cbPais"]:checked').map(function () { return $(this).val(); }).get();
+            const anos = $('input[name^="cbAno"]:checked').map(function () { return $(this).val(); }).get();
+            const ncms = $('input[name^="cbNCM"]:checked').map(function () { return $(this).val(); }).get();
+            const estados = $('input[name^="cbEstado"]:checked').map(function () { return $(this).val(); }).get();
+
+            if (!operacao || anos.length === 0) {
+                showAlert('error', 'Selecione pelo menos a Operação e um Ano');
+                return;
+            }
+
+            $('#loading').addClass('active');
+            $('#alert-error').hide();
+            $('#alert-success').hide();
+
+            // Mapear operação para código API
+            const tipoOperacao = operacao === '1' ? 'exportacao' : 'importacao';
+
+            // Mês padrão: todos (00)
+            let consultas = [];
+            anos.forEach(ano => {
+                let url = `${API_BASE}/v1/comex/stat/ncm/lista?` +
+                    `ch_ano=${ano}&ch_mes=00&tp_operacao=${tipoOperacao}`;
+
+                if (ncms.length > 0) {
+                    url += `&ch_ncm=${ncms.join(',')}`;
+                }
+
+                if (paises.length > 0) {
+                    url += `&co_pais=${paises.join(',')}`;
+                }
+
+                if (estados.length > 0) {
+                    url += `&co_uf=${estados.join(',')}`;
+                }
+
+                consultas.push($.get(url));
+            });
+
+            // Aguardar todas as consultas
+            $.when.apply($, consultas).done(function () {
+                processarResultados(arguments, anos);
+            }).fail(function () {
+                $('#loading').removeClass('active');
+                showAlert('error', 'Erro ao consultar a API. Verifique os filtros e tente novamente.');
+            });
+        }
+
+        function processarResultados(responses, anos) {
+            currentData = [];
+
+            // Handle both single and multiple responses
+            const resultsArray = responses.length !== undefined ? responses : [responses];
+
+            resultsArray.forEach((response, index) => {
+                const data = Array.isArray(response) ? response[0] : response;
+
+                if (data && data.data && Array.isArray(data.data)) {
+                    currentData = currentData.concat(data.data);
+                }
+            });
+
+            preencherTabela(currentData);
+            $('#loading').removeClass('active');
+            $('#btn-exportar').prop('disabled', currentData.length === 0);
+
+            if (currentData.length === 0) {
+                showAlert('error', 'Nenhum registro encontrado com os filtros selecionados');
+            } else {
+                showAlert('success', `${currentData.length} registros carregados com sucesso!`);
+                $('#table-info').show().find('#record-count').text(currentData.length);
+            }
+        }
+
+        function preencherTabela(dados) {
+            const tbody = $('#table-body');
+            tbody.empty();
+
+            if (dados.length === 0) {
+                tbody.html(`
+                    <tr>
+                        <td colspan="10" style="text-align: center; padding: 40px; color: #999;">
+                            Nenhum registro encontrado
+                        </td>
+                    </tr>
+                `);
+                return;
+            }
+
+            dados.forEach(item => {
+                const ano = item.CO_ANO || '-';
+                const mes = String(item.CO_MES || 0).padStart(2, '0');
+                const pais = item.NO_PAIS || '-';
+                const ncm = item.CO_NCM || '-';
+                const descricao = item.NO_NCM_POR || '-';
+                const estado = item.SG_UF || '-';
+                const quantidade = (item.QT_ESTAT || 0).toLocaleString('pt-BR');
+                const valor = (item.VL_FRETE || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'USD' });
+                const frete = (item.VL_FRETE || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'USD' });
+                const seguro = (item.VL_SEGURO || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'USD' });
+
+                const row = `
+                    <tr>
+                        <td>${ano}</td>
+                        <td>${mes}</td>
+                        <td>${pais}</td>
+                        <td><strong>${ncm}</strong></td>
+                        <td>${descricao}</td>
+                        <td>${estado}</td>
+                        <td class="numeric">${quantidade}</td>
+                        <td class="numeric">${valor}</td>
+                        <td class="numeric">${frete}</td>
+                        <td class="numeric">${seguro}</td>
+                    </tr>
+                `;
+
+                tbody.append(row);
+            });
+        }
+
+        function exportarCSV() {
+            if (currentData.length === 0) {
+                showAlert('error', 'Nenhum dado para exportar');
+                return;
+            }
+
+            let csv = 'Ano,Mês,País,NCM,Descrição,Estado,Quantidade (kg),Valor (USD),Frete (USD),Seguro (USD)\n';
+
+            currentData.forEach(item => {
+                const row = [
+                    item.CO_ANO || '',
+                    String(item.CO_MES || 0).padStart(2, '0'),
+                    (item.NO_PAIS || '').replace(/,/g, ';'),
+                    item.CO_NCM || '',
+                    (item.NO_NCM_POR || '').replace(/,/g, ';'),
+                    item.SG_UF || '',
+                    item.QT_ESTAT || 0,
+                    item.VL_FRETE || 0,
+                    item.VL_FRETE || 0,
+                    item.VL_SEGURO || 0
+                ];
+
+                csv += row.join(',') + '\n';
+            });
+
+            // Criar blob e download
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', `comex_data_${new Date().getTime()}.csv`);
+            link.style.visibility = 'hidden';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showAlert('success', 'Arquivo CSV exportado com sucesso!');
+        }
+
+        // ======================================
+        // UTILITÁRIOS
+        // ======================================
+
+        function showAlert(type, message) {
+            if (type === 'error') {
+                $('#alert-error').html(message).show();
+                $('#alert-success').hide();
+            } else {
+                $('#alert-success').html(message).show();
+                $('#alert-error').hide();
+            }
+
+            setTimeout(() => {
+                $(`#alert-${type}`).fadeOut();
+            }, 5000);
+        }
+    </script>
+
+</body>
+
+</html>
