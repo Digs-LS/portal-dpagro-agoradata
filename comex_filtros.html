@@ -143,8 +143,8 @@
                     <div class="filtro-group">
                         <div class="br-select" id="filtro-ncm" multiple="multiple">
                             <div class="br-input">
-                                <label for="select-ncm">Código NCM (Produto)</label>
-                                <input id="select-ncm" type="text" placeholder="Selecione (múltiplos)" />
+                                <label for="input-ncm">Código NCM (Produto)</label>
+                                <input id="input-ncm" type="text" placeholder="Selecione (múltiplos)" />
                                 <button class="br-button" type="button" aria-label="Exibir lista" tabindex="-1"
                                     data-trigger="data-trigger"><i class="fas fa-angle-down" aria-hidden="true"></i>
                                 </button>
@@ -284,8 +284,8 @@
 
                 // Initialize all select components after populating years
                 loadCountries();
-                loadStates();
                 loadNCM();
+                loadStates();
                 setTimeout(function () {
                     initializeSelectComponents();
                     attachEventHandlers();
@@ -328,7 +328,29 @@
                 $('#seletor-paises').html('<div class="br-item"><div class="content text-danger">Erro ao carregar países</div></div>');
             });
         }
-        ;
+
+        function loadNCM() {
+            $.get(`${API_BASE}/general/filters/ncm?language=pt`, function (response) {
+                const ncmList = response.data[0] || [];
+                console.log(response.data[0]);
+
+                ncmList.forEach(function (ncm) {
+                    const htmlItem = `
+                            <div class="br-item" tabindex="-1">
+                                <div class="br-checkbox">
+                                    <input id="cbNCM${ncm.id}" name="cbNCM" type="checkbox" value="${ncm.id}" />
+                                    <label for="cbNCM${ncm.id}">${ncm.id} - ${ncm.text}</label>
+                                </div>
+                            </div>
+                        `;
+                    $('#lista-ncm').append(htmlItem);
+
+                });
+
+            }).fail(function () {
+                $('#lista-ncm').html('<div class="br-item"><div class="content text-danger">Erro ao carregar NCM</div></div>');
+            });
+        }
 
 
         function loadStates() {
@@ -350,44 +372,8 @@
                         $('#lista-estado').append(htmlItem);
                     });
                 }
-                // Reinicializar componente Select após popular
-                initializeSelectComponents();
             }).fail(function () {
                 $('#lista-estado').html('<div class="br-item"><div class="content text-danger">Erro ao carregar estados</div></div>');
-            });
-        }
-
-        function loadNCM() {
-            $.get(`${API_BASE}/general/filters/ncm?language=pt`, function (response) {
-                const ncmList = response.data || [];
-
-                if (ncmList.length === 0) {
-                    $('#lista-ncm').html('<div class="br-item"><div class="content text-danger">Nenhum NCM disponível</div></div>');
-                } else {
-                    const limited = ncmList.length > 100;
-                    ncmList.slice(0, 100).forEach(function (ncm) { // Limita a 100 itens para performance
-                        const htmlItem = `
-                            <div class="br-item" tabindex="-1">
-                                <div class="br-checkbox">
-                                    <input id="cbNCM${ncm.id}" name="cbNCM" type="checkbox" value="${ncm.id}" />
-                                    <label for="cbNCM${ncm.id}">${ncm.text}</label>
-                                </div>
-                            </div>
-                        `;
-                        $('#lista-ncm').append(htmlItem);
-                    });
-                    if (limited) {
-                        $('#lista-ncm').append(`
-                            <div class="br-item not-found" style="color: #b58900; font-size: 0.95em; padding: 8px 16px;">
-                                Apenas os primeiros 100 códigos NCM estão listados. Refine sua busca para ver outros códigos.
-                            </div>
-                        `);
-                    }
-                }
-                // Reinicializar componente Select após popular
-                initializeSelectComponents();
-            }).fail(function () {
-                $('#lista-ncm').html('<div class="br-item"><div class="content text-danger">Erro ao carregar NCM</div></div>');
             });
         }
 
@@ -412,7 +398,7 @@
 
             selects.forEach(selector => {
                 const brSelect = document.querySelector(selector);
-                if (brSelect) {
+                if (brSelect && typeof core !== 'undefined' && typeof core.BRSelect === 'function') {
                     try {
                         br_select_instances[selector] = new core.BRSelect('br-select', brSelect, notFoundElement);
                     } catch (e) {
@@ -667,3 +653,7 @@
             }, 5000);
         }
     </script>
+
+</body>
+
+</html>
